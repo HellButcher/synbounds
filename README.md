@@ -2,7 +2,7 @@
 
 [![Latest Version](https://img.shields.io/crates/v/synbounds.svg)](https://crates.io/crates/synbounds)
 [![Documentation](https://docs.rs/synbounds/badge.svg)](https://docs.rs/synbounds)
-[![Build Status](https://github.com/HellButcher/synbounds/actions/workflows/ci.yml/badge.svg)](https://github.com/HellButcher/synbounds/actions)
+[![Build Status](https://github.com/HellButcher/synbounds/actions/workflows/rust.yml/badge.svg)](https://github.com/HellButcher/synbounds/actions)
 
 `synbounds` is a Rust crate that provides utilities for writing `proc-macro` crates that need to manipulate or analyze Rust type bounds.
 
