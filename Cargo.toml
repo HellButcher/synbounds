@@ -8,6 +8,7 @@ rust-version = "1.89"
 description = "Helper methods and macros for custom derives"
 readme = "README.md"
 keywords = ["macros", "syn", "derive", "generics", "bounds"]
+repository = "https://github.com/HellButcher/synbounds.git"
 
 [features]
 default = ["proc-macro", "substitute"]
