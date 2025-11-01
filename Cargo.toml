@@ -23,3 +23,7 @@ syn = { version = "2", default-features = false, features = ["derive", "clone-im
 [workspace]
 resolver ="3"
 members = []
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
