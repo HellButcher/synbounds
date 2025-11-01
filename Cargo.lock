@@ -33,7 +33,7 @@ dependencies = [
 
 [[package]]
 name = "synbounds"
-version = "0.1.0-alpha.3"
+version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "syn",
