@@ -199,13 +199,7 @@ impl<'a> BoundGenerics<'a> {
     /// Create a `Generics` containing only the bound generic parameters and
     /// where predicates.
     pub fn to_bound_generics(&self) -> Generics {
-        let params: Punctuated<syn::GenericParam, _> = self
-            .generics
-            .params
-            .iter()
-            .zip(self.bound.iter().copied())
-            .filter_map(|(param, is_bound)| if is_bound { Some(param.clone()) } else { None })
-            .collect();
+        let params: Punctuated<syn::GenericParam, _> = self.bound_params().cloned().collect();
         let where_clause = self
             .generics
             .where_clause
@@ -241,6 +235,12 @@ impl<'a> BoundGenerics<'a> {
     }
 }
 
+fn visit_path_arguments<'a, V: ?Sized + Visit<'a>>(visitor: &mut V, path: &'a syn::Path) {
+    for segment in &path.segments {
+        visitor.visit_path_arguments(&segment.arguments);
+    }
+}
+
 impl syn::visit::Visit<'_> for BoundGenerics<'_> {
     fn visit_lifetime(&mut self, node: &syn::Lifetime) {
         self.bind_lifetime(node);
@@ -269,8 +269,10 @@ impl syn::visit::Visit<'_> for BoundGenerics<'_> {
         } else if let Some(ident) = node.path.get_ident() {
             // maybe a generic param
             self.bind_type(ident);
+            return;
         }
-        // don't walk down further (cant be a generic param)
+        // only look at the path arguments
+        visit_path_arguments(self, &node.path);
     }
 
     fn visit_expr_path(&mut self, node: &syn::ExprPath) {
@@ -280,8 +282,10 @@ impl syn::visit::Visit<'_> for BoundGenerics<'_> {
         } else if let Some(ident) = node.path.get_ident() {
             // maybe a generic param
             self.bind_const(ident);
+            return;
         }
-        // don't walk down further (cant be a generic param)
+        // only look at the path arguments
+        visit_path_arguments(self, &node.path);
     }
 
     fn visit_generic_param(&mut self, _node: &'_ syn::GenericParam) {
@@ -361,8 +365,10 @@ impl syn::visit::Visit<'_> for ContainsBoundGenerics<'_> {
                     self.contains_unbound = true;
                 }
             }
+            return;
         }
-        // don't walk down further (cant be a generic param)
+        // only look at the path arguments
+        visit_path_arguments(self, &node.path);
     }
 
     fn visit_expr_path(&mut self, node: &syn::ExprPath) {
@@ -378,8 +384,10 @@ impl syn::visit::Visit<'_> for ContainsBoundGenerics<'_> {
                     self.contains_unbound = true;
                 }
             }
+            return;
         }
-        // don't walk down further (cant be a generic param)
+        // only look at the path arguments
+        visit_path_arguments(self, &node.path);
     }
 }
 
