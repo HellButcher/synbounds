@@ -19,11 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - fix docsrs all features
 
-## [0.1.0-alpha.1](https://github.com/HellButcher/synbounds/compare/v0.1.0-alpha...v0.1.0-alpha.1) - 2025-11-01
+## [0.1.0-alpha.1](https://github.com/HellButcher/synbounds/compare/182c76b...v0.1.0-alpha.1) - 2025-11-01
+
+### Added
+
+- Initial Commit
+- add basic functionality to check for bound and unbound generic params
+- Added `BoundGenerics`
+- Added `SubstituteLifetimes`
 
 ### Fixed
 
-- fix build
 - remove non-required dep
 
 ### Other
