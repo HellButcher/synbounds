@@ -1,0 +1,25 @@
+[package]
+name = "synbounds"
+version = "0.1.0-alpha"
+authors = ["Christoph Hommelsheim <main@chommel.en>"]
+license = "MIT OR Apache-2.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Helper methods and macros for custom derives"
+readme = "README.md"
+keywords = ["macros", "syn", "derive", "generics", "bounds"]
+
+[features]
+default = ["proc-macro", "substitute"]
+proc-macro = ["proc-macro2/proc-macro", "syn/proc-macro", "quote/proc-macro"]
+full = ["syn/full"]
+substitute = ["syn/visit-mut"]
+
+[dependencies]
+proc-macro2 = { version = "1", default-features = false }
+quote = { version = "1", default-features = false }
+syn = { version = "2", default-features = false, features = ["derive", "clone-impls", "visit"]}
+
+[workspace]
+resolver ="3"
+members = []
