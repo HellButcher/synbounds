@@ -12,7 +12,7 @@ repository = "https://github.com/HellButcher/synbounds.git"
 
 [features]
 default = ["proc-macro", "substitute"]
-proc-macro = ["proc-macro2/proc-macro", "syn/proc-macro", "quote/proc-macro"]
+proc-macro = ["proc-macro2/proc-macro", "syn/proc-macro"]
 full = ["syn/full"]
 substitute = ["syn/visit-mut"]
 

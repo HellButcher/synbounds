@@ -36,7 +36,6 @@ name = "synbounds"
 version = "0.1.0-alpha"
 dependencies = [
  "proc-macro2",
- "quote",
  "syn",
 ]
 
