@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0-alpha.4](https://github.com/HellButcher/synbounds/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) - 2025-11-01
+## [0.1.0](https://github.com/HellButcher/synbounds/compare/182c76b...v0.1.0) - 2025-11-01
 
-### Other
+### Added
 
-- cleanup changelog
+- Initial Commit
+- add basic functionality to check for bound and unbound generic params
+- Added `BoundGenerics`
+- Added `SubstituteLifetimes`
+
 
 ## [0.1.0-alpha.3](https://github.com/HellButcher/synbounds/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) - 2025-11-01
 
