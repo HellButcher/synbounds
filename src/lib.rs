@@ -629,10 +629,12 @@ impl syn::visit_mut::VisitMut for SubstituteSelfType<'_> {
     fn visit_type_mut(&mut self, node: &mut syn::Type) {
         // Check if this is a Self type
         if let syn::Type::Path(type_path) = node
-            && type_path.qself.is_none() && type_path.path.is_ident("Self") {
-                *node = self.concrete_type.clone();
-                return;
-            }
+            && type_path.qself.is_none()
+            && type_path.path.is_ident("Self")
+        {
+            *node = self.concrete_type.clone();
+            return;
+        }
         // Continue visiting nested types
         syn::visit_mut::visit_type_mut(self, node);
     }
