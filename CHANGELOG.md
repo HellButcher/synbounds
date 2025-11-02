@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/HellButcher/synbounds/compare/v0.1.2...v0.1.3) - 2025-11-02
+
+### Other
+
+- remove unuded type params
+- add the permission to trigger workflows
+- fix head_branch
+- fix github-script
+- fix variable
+- try workflow dispatch
+
 ## [0.1.2](https://github.com/HellButcher/synbounds/compare/v0.1.1...v0.1.2) - 2025-11-02
 
 ### Added
