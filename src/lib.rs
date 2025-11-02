@@ -80,7 +80,7 @@
 //!
 //! // Replace all lifetimes with 'static
 //! let mut ty: Type = parse_quote! { &'a Vec<&'b str> };
-//! let mut visitor = substitute_with_static_lifetime::<()>();
+//! let mut visitor = substitute_with_static_lifetime();
 //! visitor.visit_type_mut(&mut ty);
 //! // ty is now: &'static Vec<&'static str>
 //! ```
@@ -94,7 +94,7 @@
 //!
 //! let target_lifetime: Lifetime = parse_quote! { 'target };
 //! let mut ty: Type = parse_quote! { &'a String };
-//! let mut visitor = substitute_with_lifetime::<()>(&target_lifetime);
+//! let mut visitor = substitute_with_lifetime(&target_lifetime);
 //! visitor.visit_type_mut(&mut ty);
 //! // ty is now: &'target String
 //! ```
@@ -569,7 +569,7 @@ impl<F: Fn(&mut Lifetime) + ?Sized> syn::visit_mut::VisitMut for SubstituteLifet
 /// Creates a [`SubstituteLifetimes`] visitor that substitutes all non-`'static` lifetimes with `'static`.
 #[cfg(feature = "substitute")]
 #[cfg_attr(docsrs, doc(cfg(feature = "substitute")))]
-pub const fn substitute_with_static_lifetime<T>() -> SubstituteLifetimes<impl Fn(&mut Lifetime)> {
+pub const fn substitute_with_static_lifetime() -> SubstituteLifetimes<impl Fn(&mut Lifetime)> {
     SubstituteLifetimes(|lifetime: &mut Lifetime| {
         if lifetime.ident != "static" {
             *lifetime = Lifetime::new("'static", lifetime.span());
@@ -580,7 +580,7 @@ pub const fn substitute_with_static_lifetime<T>() -> SubstituteLifetimes<impl Fn
 /// Creates a [`SubstituteLifetimes`] visitor that substitutes all non-`'static` lifetimes with the provided lifetime.
 #[cfg(feature = "substitute")]
 #[cfg_attr(docsrs, doc(cfg(feature = "substitute")))]
-pub const fn substitute_with_lifetime<T>(
+pub const fn substitute_with_lifetime(
     new_lifetime: &Lifetime,
 ) -> SubstituteLifetimes<impl Fn(&mut Lifetime)> {
     SubstituteLifetimes(|lifetime: &mut Lifetime| {
@@ -622,6 +622,13 @@ impl<'a> SubstituteSelfType<'a> {
     pub const fn new(concrete_type: &'a syn::Type) -> Self {
         SubstituteSelfType { concrete_type }
     }
+}
+
+/// Creates a [`SubstituteSelfType`] visitor that substitutes `Self` types with the provided concrete type.
+#[cfg(feature = "substitute")]
+#[cfg_attr(docsrs, doc(cfg(feature = "substitute")))]
+pub const fn substitute_self_type(concrete_type: &syn::Type) -> SubstituteSelfType<'_> {
+    SubstituteSelfType::new(concrete_type)
 }
 
 #[cfg(feature = "substitute")]
@@ -1062,7 +1069,7 @@ mod tests {
         use syn::visit_mut::VisitMut;
 
         let mut ty: syn::Type = parse_quote! { &'a String };
-        let mut visitor = substitute_with_static_lifetime::<()>();
+        let mut visitor = substitute_with_static_lifetime();
         visitor.visit_type_mut(&mut ty);
 
         let expected: syn::Type = parse_quote! { &'static String };
@@ -1079,7 +1086,7 @@ mod tests {
 
         let new_lifetime: Lifetime = parse_quote! { 'b };
         let mut ty: syn::Type = parse_quote! { &'a String };
-        let mut visitor = substitute_with_lifetime::<()>(&new_lifetime);
+        let mut visitor = substitute_with_lifetime(&new_lifetime);
         visitor.visit_type_mut(&mut ty);
 
         let expected: syn::Type = parse_quote! { &'b String };
@@ -1096,7 +1103,7 @@ mod tests {
 
         let new_lifetime: Lifetime = parse_quote! { 'a };
         let mut ty: syn::Type = parse_quote! { &'static String };
-        let mut visitor = substitute_with_lifetime::<()>(&new_lifetime);
+        let mut visitor = substitute_with_lifetime(&new_lifetime);
         visitor.visit_type_mut(&mut ty);
 
         // 'static should be preserved
