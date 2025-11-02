@@ -20,6 +20,10 @@ substitute = ["syn/visit-mut"]
 proc-macro2 = { version = "1", default-features = false }
 syn = { version = "2", default-features = false, features = ["derive", "clone-impls", "visit"]}
 
+[dev-dependencies]
+quote = "1"
+syn = { version = "2", features = ["full", "parsing", "printing", "visit-mut"] }
+
 [workspace]
 resolver ="3"
 members = []
