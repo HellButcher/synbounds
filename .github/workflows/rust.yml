@@ -1,13 +1,12 @@
 name: Rust CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  pull_request_target:
-    branches: [ main ]
-    types: [opened, synchronize]
+  merge_group:
 
 env:
   CARGO_TERM_COLOR: always
