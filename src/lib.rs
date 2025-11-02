@@ -68,6 +68,54 @@
 //! # assert_eq!(bound_generics.params.len(), 2);
 //! ```
 //!
+//! ## Substituting Lifetimes
+//!
+//! The crate also provides utilities for replacing lifetimes in syntax trees (requires the
+//! `substitute` feature, enabled by default):
+//!
+//! ```
+//! use syn::{parse_quote, Type};
+//! use syn::visit_mut::VisitMut;
+//! use synbounds::substitute_with_static_lifetime;
+//!
+//! // Replace all lifetimes with 'static
+//! let mut ty: Type = parse_quote! { &'a Vec<&'b str> };
+//! let mut visitor = substitute_with_static_lifetime::<()>();
+//! visitor.visit_type_mut(&mut ty);
+//! // ty is now: &'static Vec<&'static str>
+//! ```
+//!
+//! You can also substitute with a specific lifetime using [`substitute_with_lifetime`]:
+//!
+//! ```
+//! use syn::{parse_quote, Type, Lifetime};
+//! use syn::visit_mut::VisitMut;
+//! use synbounds::substitute_with_lifetime;
+//!
+//! let target_lifetime: Lifetime = parse_quote! { 'target };
+//! let mut ty: Type = parse_quote! { &'a String };
+//! let mut visitor = substitute_with_lifetime::<()>(&target_lifetime);
+//! visitor.visit_type_mut(&mut ty);
+//! // ty is now: &'target String
+//! ```
+//!
+//! Or create custom substitution logic with [`SubstituteLifetimes`]:
+//!
+//! ```
+//! use syn::{parse_quote, Type, Lifetime};
+//! use syn::visit_mut::VisitMut;
+//! use synbounds::SubstituteLifetimes;
+//!
+//! let mut ty: Type = parse_quote! { &'a String };
+//! let mut visitor = SubstituteLifetimes(|lifetime: &mut Lifetime| {
+//!     if lifetime.ident == "a" {
+//!         *lifetime = Lifetime::new("'long", lifetime.span());
+//!     }
+//! });
+//! visitor.visit_type_mut(&mut ty);
+//! // ty is now: &'long String
+//! ```
+//!
 //! # Features
 //!
 //! - `proc-macro` (default): Enable proc-macro support
@@ -1129,7 +1177,7 @@ mod tests {
 
         // Only T should be bound
         assert_eq!(bounds.bound_type_params().count(), 1);
-        
+
         // Only T's where predicate should be included
         let where_preds: Vec<_> = bounds.bound_where_predicates().collect();
         assert_eq!(where_preds.len(), 1);
