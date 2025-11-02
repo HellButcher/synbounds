@@ -66,5 +66,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'rust.yml',
-              ref: fromJSON(steps.release-plz.outputs.pr).head_ref,
+              ref: '${{fromJSON(steps.release-plz.outputs.pr).head_ref}}',
             })
