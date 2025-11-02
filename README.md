@@ -13,7 +13,7 @@ It leverages the `syn` crate to parse and work with Rust syntax trees, making it
 - **Track Generic Usage**: Automatically determine which generic parameters (types, lifetimes, consts) are actually used in your code
 - **Extract Minimal Bounds**: Generate minimal `where` clauses containing only the predicates for used generics
 - **Lifetime Substitution**: Utilities for replacing lifetimes in syntax trees
-- **Zero Overhead**: All analysis happens at compile-time via `proc-macro`
+- **Self Type Substitution**: Replace `Self` with concrete types in method signatures and return types
 
 ## Usage
 
@@ -116,6 +116,23 @@ let mut visitor = substitute_with_static_lifetime::<()>();
 visitor.visit_type_mut(&mut ty);
 // ty is now: &'static String
 ```
+
+### Example: Substituting `Self` Types
+
+```rust
+use syn::{parse_quote, Type};
+use syn::visit_mut::VisitMut;
+use synbounds::SubstituteSelfType;
+
+let concrete_type: Type = parse_quote! { MyStruct<T, U> };
+let mut return_type: Type = parse_quote! { Result<Self, Error> };
+
+let mut visitor = SubstituteSelfType::new(&concrete_type);
+visitor.visit_type_mut(&mut return_type);
+// return_type is now: Result<MyStruct<T, U>, Error>
+```
+
+This is especially useful when defining private wrapper objects for functions that use `Self`.
 
 ## Features
 

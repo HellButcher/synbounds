@@ -116,6 +116,42 @@
 //! // ty is now: &'long String
 //! ```
 //!
+//! ## Substituting `Self` Types
+//!
+//! When generating wrapper types or helper functions, you often need to replace `Self` with
+//! the concrete type. The [`SubstituteSelfType`] visitor handles this:
+//!
+//! ```
+//! use syn::{parse_quote, Type};
+//! use syn::visit_mut::VisitMut;
+//! use synbounds::SubstituteSelfType;
+//!
+//! let concrete_type: Type = parse_quote! { MyStruct<T, U> };
+//! let mut return_type: Type = parse_quote! { Result<Self, Error> };
+//!
+//! let mut visitor = SubstituteSelfType::new(&concrete_type);
+//! visitor.visit_type_mut(&mut return_type);
+//! // return_type is now: Result<MyStruct<T, U>, Error>
+//! ```
+//!
+//! This is especially useful when defining private wrapper objects for functions that use `Self`:
+//!
+//! ```
+//! use syn::{parse_quote, Signature, Type};
+//! use syn::visit_mut::VisitMut;
+//! use synbounds::SubstituteSelfType;
+//!
+//! // Original method signature with Self
+//! let mut sig: Signature = parse_quote! {
+//!     fn process(input: &Self) -> Option<Self>
+//! };
+//!
+//! let concrete: Type = parse_quote! { MyStruct<'a, T> };
+//! let mut visitor = SubstituteSelfType::new(&concrete);
+//! visitor.visit_signature_mut(&mut sig);
+//! // Signature now uses: MyStruct<'a, T> instead of Self
+//! ```
+//!
 //! # Features
 //!
 //! - `proc-macro` (default): Enable proc-macro support
@@ -552,6 +588,54 @@ pub const fn substitute_with_lifetime<T>(
             *lifetime = new_lifetime.clone();
         }
     })
+}
+
+/// A [`syn::visit_mut::VisitMut`] that substitutes the `Self` type with a concrete type.
+///
+/// This is particularly useful when generating wrapper types or helper functions that need
+/// to use the concrete type instead of `Self`.
+///
+/// # Example
+///
+/// ```
+/// use syn::{parse_quote, Type};
+/// use syn::visit_mut::VisitMut;
+/// use synbounds::SubstituteSelfType;
+///
+/// let concrete_type: Type = parse_quote! { MyStruct<T> };
+/// let mut return_type: Type = parse_quote! { Option<Self> };
+///
+/// let mut visitor = SubstituteSelfType::new(&concrete_type);
+/// visitor.visit_type_mut(&mut return_type);
+/// // return_type is now: Option<MyStruct<T>>
+/// ```
+#[cfg(feature = "substitute")]
+#[cfg_attr(docsrs, doc(cfg(feature = "substitute")))]
+#[derive(Clone)]
+pub struct SubstituteSelfType<'a> {
+    concrete_type: &'a syn::Type,
+}
+
+#[cfg(feature = "substitute")]
+impl<'a> SubstituteSelfType<'a> {
+    /// Create a new `SubstituteSelfType` visitor that will replace `Self` with the given concrete type.
+    pub const fn new(concrete_type: &'a syn::Type) -> Self {
+        SubstituteSelfType { concrete_type }
+    }
+}
+
+#[cfg(feature = "substitute")]
+impl syn::visit_mut::VisitMut for SubstituteSelfType<'_> {
+    fn visit_type_mut(&mut self, node: &mut syn::Type) {
+        // Check if this is a Self type
+        if let syn::Type::Path(type_path) = node
+            && type_path.qself.is_none() && type_path.path.is_ident("Self") {
+                *node = self.concrete_type.clone();
+                return;
+            }
+        // Continue visiting nested types
+        syn::visit_mut::visit_type_mut(self, node);
+    }
 }
 
 /// A reference to a generic parameter: type, lifetime, or const.
@@ -1015,6 +1099,147 @@ mod tests {
 
         // 'static should be preserved
         let expected: syn::Type = parse_quote! { &'static String };
+        assert_eq!(
+            quote::quote!(#ty).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+    }
+
+    #[cfg(feature = "substitute")]
+    #[test]
+    fn test_substitute_self_simple() {
+        use syn::visit_mut::VisitMut;
+
+        let concrete: syn::Type = parse_quote! { MyStruct };
+        let mut ty: syn::Type = parse_quote! { Self };
+        let mut visitor = SubstituteSelfType::new(&concrete);
+        visitor.visit_type_mut(&mut ty);
+
+        let expected: syn::Type = parse_quote! { MyStruct };
+        assert_eq!(
+            quote::quote!(#ty).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+    }
+
+    #[cfg(feature = "substitute")]
+    #[test]
+    fn test_substitute_self_in_generic() {
+        use syn::visit_mut::VisitMut;
+
+        let concrete: syn::Type = parse_quote! { MyStruct<T> };
+        let mut ty: syn::Type = parse_quote! { Option<Self> };
+        let mut visitor = SubstituteSelfType::new(&concrete);
+        visitor.visit_type_mut(&mut ty);
+
+        let expected: syn::Type = parse_quote! { Option<MyStruct<T>> };
+        assert_eq!(
+            quote::quote!(#ty).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+    }
+
+    #[cfg(feature = "substitute")]
+    #[test]
+    fn test_substitute_self_in_reference() {
+        use syn::visit_mut::VisitMut;
+
+        let concrete: syn::Type = parse_quote! { MyStruct };
+        let mut ty: syn::Type = parse_quote! { &'a Self };
+        let mut visitor = SubstituteSelfType::new(&concrete);
+        visitor.visit_type_mut(&mut ty);
+
+        let expected: syn::Type = parse_quote! { &'a MyStruct };
+        assert_eq!(
+            quote::quote!(#ty).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+    }
+
+    #[cfg(feature = "substitute")]
+    #[test]
+    fn test_substitute_self_nested() {
+        use syn::visit_mut::VisitMut;
+
+        let concrete: syn::Type = parse_quote! { MyStruct<T, U> };
+        let mut ty: syn::Type = parse_quote! { Vec<Box<Self>> };
+        let mut visitor = SubstituteSelfType::new(&concrete);
+        visitor.visit_type_mut(&mut ty);
+
+        let expected: syn::Type = parse_quote! { Vec<Box<MyStruct<T, U>>> };
+        assert_eq!(
+            quote::quote!(#ty).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+    }
+
+    #[cfg(feature = "substitute")]
+    #[test]
+    fn test_substitute_self_in_tuple() {
+        use syn::visit_mut::VisitMut;
+
+        let concrete: syn::Type = parse_quote! { MyStruct };
+        let mut ty: syn::Type = parse_quote! { (Self, String, Self) };
+        let mut visitor = SubstituteSelfType::new(&concrete);
+        visitor.visit_type_mut(&mut ty);
+
+        let expected: syn::Type = parse_quote! { (MyStruct, String, MyStruct) };
+        assert_eq!(
+            quote::quote!(#ty).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+    }
+
+    #[cfg(feature = "substitute")]
+    #[test]
+    fn test_substitute_self_in_fn_signature() {
+        use syn::visit_mut::VisitMut;
+
+        let concrete: syn::Type = parse_quote! { MyStruct<T> };
+        let mut sig: syn::Signature = parse_quote! {
+            fn process(input: Self) -> Result<Self, Error>
+        };
+        let mut visitor = SubstituteSelfType::new(&concrete);
+        visitor.visit_signature_mut(&mut sig);
+
+        let expected: syn::Signature = parse_quote! {
+            fn process(input: MyStruct<T>) -> Result<MyStruct<T>, Error>
+        };
+        assert_eq!(
+            quote::quote!(#sig).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+    }
+
+    #[cfg(feature = "substitute")]
+    #[test]
+    fn test_substitute_self_preserves_other_types() {
+        use syn::visit_mut::VisitMut;
+
+        let concrete: syn::Type = parse_quote! { MyStruct };
+        let mut ty: syn::Type = parse_quote! { HashMap<String, Vec<i32>> };
+        let mut visitor = SubstituteSelfType::new(&concrete);
+        visitor.visit_type_mut(&mut ty);
+
+        // Should remain unchanged
+        let expected: syn::Type = parse_quote! { HashMap<String, Vec<i32>> };
+        assert_eq!(
+            quote::quote!(#ty).to_string(),
+            quote::quote!(#expected).to_string()
+        );
+    }
+
+    #[cfg(feature = "substitute")]
+    #[test]
+    fn test_substitute_self_with_lifetime_in_concrete() {
+        use syn::visit_mut::VisitMut;
+
+        let concrete: syn::Type = parse_quote! { MyStruct<'a, T> };
+        let mut ty: syn::Type = parse_quote! { &Self };
+        let mut visitor = SubstituteSelfType::new(&concrete);
+        visitor.visit_type_mut(&mut ty);
+
+        let expected: syn::Type = parse_quote! { &MyStruct<'a, T> };
         assert_eq!(
             quote::quote!(#ty).to_string(),
             quote::quote!(#expected).to_string()
