@@ -1514,7 +1514,7 @@ mod tests {
 
         let mut bounds = BoundGenerics::new(&item.generics);
         // Visit trait and self type
-        if let Some((_, ref trait_path, _)) = item.trait_ {
+        if let Some((ref trait_path, _)) = item.trait_ {
             bounds.visit_path(trait_path);
         }
         bounds.visit_type(&item.self_ty);
