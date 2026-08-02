@@ -23,13 +23,15 @@ jobs:
           - beta
           - nightly
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
     - name: Install Toolchain
       run: |
         rustup toolchain install ${{ matrix.channel }} --no-self-update --profile minimal -c "clippy,rustfmt"
         rustup default ${{ matrix.channel }}
     - name: Cache cargo registry & index
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: |
           ~/.cargo/registry
@@ -46,9 +48,11 @@ jobs:
     name: Rustfmt & Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Cache cargo registry & index
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
