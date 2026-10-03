@@ -4,28 +4,22 @@ on:
   # once every day, as a vulnerability can be found in dependencies at any time
   schedule:
     - cron: '0 3 * * *'
-  # on every push on every branch, if Cargo.toml or Cargo.lock was changed
   push:
     paths:
-      - "**/Cargo.*"
-  # and on pull-requests into the main-branch
-  pull_request:
-    paths:
-      - "**/Cargo.*"
-    branches:
-      - main
-
-env:
-  CARGO_TERM_COLOR: always
-  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      checks: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
-      - uses: rustsec/audit-check@v1.4.1
+      - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

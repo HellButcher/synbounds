@@ -1,63 +1,88 @@
 name: Rust CI
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
   merge_group:
 
 env:
   CARGO_TERM_COLOR: always
-  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+  CARGO_INCREMENTAL: 0
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: ${{github.event_name == 'pull_request'}}
 
 jobs:
   test:
     name: Build & Test
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        channel:
+        toolchain:
           - stable
           - beta
           - nightly
+    runs-on: ubuntu-latest
+    env:
+      TOOLCHAIN: ${{ matrix.toolchain }}
     steps:
-    - uses: actions/checkout@v7
-      with:
-        persist-credentials: false
-    - name: Install Toolchain
-      run: |
-        rustup toolchain install ${{ matrix.channel }} --no-self-update --profile minimal -c "clippy,rustfmt"
-        rustup default ${{ matrix.channel }}
-    - name: Cache cargo registry & index
-      uses: actions/cache@v6
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-        key: cargo-index-${{ runner.os }}-${{ hashFiles('**/Cargo.*') }}
-    - name: Build
-      run: |
-        cargo build --workspace --all-targets
-    - name: Run tests
-      run: |
-        cargo test --workspace --all-targets
+      - &checkout
+        name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - &install-toolchain
+        name: Install Toolchain ${{ env.TOOLCHAIN }}
+        run: |
+          rustup toolchain update "$TOOLCHAIN" --profile minimal -c "clippy,rustfmt"
+          rustup default "$TOOLCHAIN"
+      - &restore-cache
+        id: restore-cache
+        name: Restore cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: cargo-index-${{ runner.os }}--${{ env.TOOLCHAIN }}--${{ hashFiles('**/Cargo.*') }}
+          restore-keys: |
+            cargo-index-${{ runner.os }}--${{ env.TOOLCHAIN }}--${{ hashFiles('**/Cargo.*') }}
+            cargo-index-${{ runner.os }}--${{ env.TOOLCHAIN }}--
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - name: Build
+        run: |
+          cargo build --verbose --workspace --all-targets
+      - name: Run tests
+        run: |
+          cargo test --verbose --workspace --all-targets
+      - name: Save cache
+        # only on main
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+        
 
   check:
     name: Rustfmt & Clippy
     runs-on: ubuntu-latest
+    env:
+      TOOLCHAIN: stable
     steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - name: Cache cargo registry & index
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: cargo-index-${{ runner.os }}-${{ hashFiles('**/Cargo.*') }}
+      - *checkout
+      - *install-toolchain
+      - *restore-cache
       - name: Rustfmt
         run: |
           cargo fmt --all --check
